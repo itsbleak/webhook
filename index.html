@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discord Webhook Sender</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        background-color: #f5f5f5;
+    }
+    form {
+        max-width: 500px;
+        margin: auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+    }
+    label {
+        display: block;
+        margin-top: 15px;
+    }
+    input, textarea, button {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+    button {
+        margin-top: 20px;
+        background-color: #7289da;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #5b6eae;
+    }
+</style>
+</head>
+<body>
+
+<form id="webhookForm">
+    <h2>Discord Webhook Sender</h2>
+    
+    <label for="webhook">Webhook URL (required):</label>
+    <input type="url" id="webhook" required placeholder="https://discord.com/api/webhooks/...">
+
+    <label for="title">Title:</label>
+    <input type="text" id="title" placeholder="Embed Title">
+
+    <label for="description">Description:</label>
+    <textarea id="description" rows="3" placeholder="Embed Description"></textarea>
+
+    <label for="bigImage">Big Image URL:</label>
+    <input type="url" id="bigImage" placeholder="https://example.com/big.png">
+
+    <label for="smallImage">Small Image URL:</label>
+    <input type="url" id="smallImage" placeholder="https://example.com/small.png">
+
+    <label for="color">Color:</label>
+    <input type="color" id="color" value="#ffffff">
+
+    <button type="submit">Send to Discord</button>
+</form>
+
+<script>
+document.getElementById('webhookForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const webhookURL = document.getElementById('webhook').value.trim();
+    const title = document.getElementById('title').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const bigImage = document.getElementById('bigImage').value.trim();
+    const smallImage = document.getElementById('smallImage').value.trim();
+    const color = document.getElementById('color').value;
+
+    if (!webhookURL) {
+        alert('Webhook URL is required!');
+        return;
+    }
+
+    const embed = {};
+    if (title) embed.title = title;
+    if (description) embed.description = description;
+    if (color) embed.color = parseInt(color.replace('#', ''), 16);
+    if (bigImage) embed.image = { url: bigImage };
+    if (smallImage) embed.thumbnail = { url: smallImage };
+
+    try {
+        const response = await fetch(webhookURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ embeds: [embed] })
+        });
+
+        if (response.ok) {
+            alert('Message sent successfully!');
+        } else {
+            alert('Failed to send message. Check your webhook URL.');
+        }
+    } catch (err) {
+        alert('Error sending message: ' + err.message);
+    }
+});
+</script>
+
+</body>
+</html>
