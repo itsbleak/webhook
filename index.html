@@ -12,9 +12,9 @@ body {
     padding: 40px;
 }
 form {
-    max-width: 600px;
+    max-width: 650px;
     margin: auto;
-    background: #fff;
+    background: #ffffff;
     padding: 25px;
     border-radius: 10px;
     box-shadow: 0 0 15px rgba(0,0,0,0.1);
@@ -23,8 +23,8 @@ h2 {
     text-align: center;
 }
 label {
-    margin-top: 15px;
     display: block;
+    margin-top: 14px;
     font-weight: bold;
 }
 input, textarea, button {
@@ -47,6 +47,9 @@ button {
 }
 button:hover {
     background: #4752c4;
+}
+hr {
+    margin: 25px 0;
 }
 #status {
     margin-top: 20px;
@@ -72,15 +75,6 @@ button:hover {
 <label>Webhook URL (required)</label>
 <input type="url" id="webhook" required>
 
-<label>Webhook Name (Username)</label>
-<input type="text" id="username">
-
-<label>Webhook Avatar URL</label>
-<input type="url" id="avatarUrl">
-
-<label>Webhook Avatar Upload</label>
-<input type="file" id="avatarFile" accept="image/*">
-
 <hr>
 
 <label>Embed Title</label>
@@ -90,7 +84,28 @@ button:hover {
 <textarea id="description" rows="3"></textarea>
 
 <label>Embed Color</label>
-<input type="color" id="color" value="#ffffff">
+<input type="color" id="color" value="#5865F2">
+
+<hr>
+
+<label>Author Name (Top of Embed)</label>
+<input type="text" id="authorName">
+
+<label>Author Icon URL (URL only)</label>
+<input type="url" id="authorIcon">
+
+<hr>
+
+<label>Footer Text (Bottom of Embed)</label>
+<input type="text" id="footerText">
+
+<label>Footer Icon URL (URL only)</label>
+<input type="url" id="footerIcon">
+
+<label>
+    <input type="checkbox" id="useTimestamp">
+    Add Timestamp
+</label>
 
 <hr>
 
@@ -100,10 +115,10 @@ button:hover {
 <label>Big Image Upload</label>
 <input type="file" id="bigImageFile" accept="image/*">
 
-<label>Small Image URL</label>
+<label>Thumbnail Image URL</label>
 <input type="url" id="smallImageUrl">
 
-<label>Small Image Upload</label>
+<label>Thumbnail Image Upload</label>
 <input type="file" id="smallImageFile" accept="image/*">
 
 <button type="submit">Send Webhook</button>
@@ -112,16 +127,6 @@ button:hover {
 </form>
 
 <script>
-function fileToDataURL(file) {
-    return new Promise((resolve, reject) => {
-        if (!file) return resolve(null);
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
-
 function showStatus(message, type) {
     const box = document.getElementById("status");
     box.className = type;
@@ -133,60 +138,82 @@ document.getElementById("webhookForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     showStatus("Sending webhook…", "success");
 
+    const webhook = document.getElementById("webhook").value.trim();
+    if (!webhook) return showStatus("Webhook URL is required.", "error");
+
+    const title = document.getElementById("title").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const color = parseInt(document.getElementById("color").value.replace("#",""), 16);
+
+    const authorName = document.getElementById("authorName").value.trim();
+    const authorIcon = document.getElementById("authorIcon").value.trim();
+
+    const footerText = document.getElementById("footerText").value.trim();
+    const footerIcon = document.getElementById("footerIcon").value.trim();
+
+    const useTimestamp = document.getElementById("useTimestamp").checked;
+
+    const bigImageUrl = document.getElementById("bigImageUrl").value.trim();
+    const bigImageFile = document.getElementById("bigImageFile").files[0];
+
+    const smallImageUrl = document.getElementById("smallImageUrl").value.trim();
+    const smallImageFile = document.getElementById("smallImageFile").files[0];
+
+    const embed = { color };
+
+    if (title) embed.title = title;
+    if (description) embed.description = description;
+
+    if (authorName || authorIcon) {
+        embed.author = {};
+        if (authorName) embed.author.name = authorName;
+        if (authorIcon) embed.author.icon_url = authorIcon;
+    }
+
+    if (footerText || footerIcon) {
+        embed.footer = {};
+        if (footerText) embed.footer.text = footerText;
+        if (footerIcon) embed.footer.icon_url = footerIcon;
+    }
+
+    if (useTimestamp) {
+        embed.timestamp = new Date().toISOString();
+    }
+
+    const form = new FormData();
+
+    if (bigImageFile) {
+        form.append("file1", bigImageFile);
+        embed.image = { url: "attachment://" + bigImageFile.name };
+    } else if (bigImageUrl) {
+        embed.image = { url: bigImageUrl };
+    }
+
+    if (smallImageFile) {
+        form.append("file2", smallImageFile);
+        embed.thumbnail = { url: "attachment://" + smallImageFile.name };
+    } else if (smallImageUrl) {
+        embed.thumbnail = { url: smallImageUrl };
+    }
+
+    form.append("payload_json", JSON.stringify({
+        content: " ",
+        embeds: [embed]
+    }));
+
     try {
-        const webhook = document.getElementById("webhook").value.trim();
-        if (!webhook) {
-            showStatus("Webhook URL is required.", "error");
-            return;
-        }
-
-        const username = document.getElementById("username").value.trim();
-        const avatarUrl = document.getElementById("avatarUrl").value.trim();
-        const avatarFile = document.getElementById("avatarFile").files[0];
-
-        const title = document.getElementById("title").value.trim();
-        const description = document.getElementById("description").value.trim();
-        const color = document.getElementById("color").value;
-
-        const bigImageUrl = document.getElementById("bigImageUrl").value.trim();
-        const bigImageFile = document.getElementById("bigImageFile").files[0];
-
-        const smallImageUrl = document.getElementById("smallImageUrl").value.trim();
-        const smallImageFile = document.getElementById("smallImageFile").files[0];
-
-        const avatarData = avatarFile ? await fileToDataURL(avatarFile) : avatarUrl || null;
-        const bigImageData = bigImageFile ? await fileToDataURL(bigImageFile) : bigImageUrl || null;
-        const smallImageData = smallImageFile ? await fileToDataURL(smallImageFile) : smallImageUrl || null;
-
-        const embed = {};
-        if (title) embed.title = title;
-        if (description) embed.description = description;
-        if (color) embed.color = parseInt(color.replace("#", ""), 16);
-        if (bigImageData) embed.image = { url: bigImageData };
-        if (smallImageData) embed.thumbnail = { url: smallImageData };
-
-        const payload = {
-            content: " ", // ← prevents Discord rejecting empty payloads
-        };
-
-        if (Object.keys(embed).length) payload.embeds = [embed];
-        if (username) payload.username = username;
-        if (avatarData) payload.avatar_url = avatarData;
-
         const res = await fetch(webhook, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: form
         });
 
         if (res.status === 204 || res.ok) {
             showStatus("✅ Webhook sent successfully!", "success");
         } else {
-            const text = await res.text();
-            showStatus(`❌ Discord Error (${res.status}): ${text}`, "error");
+            showStatus("❌ Discord rejected the request (" + res.status + ")", "error");
         }
     } catch (err) {
-        showStatus("❌ JavaScript Error: " + err.message, "error");
+        showStatus("❌ Error: " + err.message, "error");
     }
 });
 </script>
