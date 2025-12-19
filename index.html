@@ -12,7 +12,7 @@ body {
     padding: 40px;
 }
 form {
-    max-width: 650px;
+    max-width: 700px;
     margin: auto;
     background: #ffffff;
     padding: 25px;
@@ -65,6 +65,9 @@ hr {
     background: #f8d7da;
     color: #721c24;
 }
+small {
+    color: #666;
+}
 </style>
 </head>
 <body>
@@ -72,11 +75,20 @@ hr {
 <form id="webhookForm">
 <h2>Discord Webhook Builder</h2>
 
+<!-- WEBHOOK -->
 <label>Webhook URL (required)</label>
 <input type="url" id="webhook" required>
 
+<label>Webhook Name (Username)</label>
+<input type="text" id="webhookName">
+
+<label>Webhook Avatar URL</label>
+<input type="url" id="webhookAvatar">
+<small>Must be a public image URL (Discord limitation)</small>
+
 <hr>
 
+<!-- EMBED MAIN -->
 <label>Embed Title</label>
 <input type="text" id="title">
 
@@ -88,19 +100,23 @@ hr {
 
 <hr>
 
+<!-- AUTHOR -->
 <label>Author Name (Top of Embed)</label>
 <input type="text" id="authorName">
 
-<label>Author Icon URL (URL only)</label>
+<label>Author Icon URL</label>
 <input type="url" id="authorIcon">
+<small>URL only</small>
 
 <hr>
 
+<!-- FOOTER -->
 <label>Footer Text (Bottom of Embed)</label>
 <input type="text" id="footerText">
 
-<label>Footer Icon URL (URL only)</label>
+<label>Footer Icon URL</label>
 <input type="url" id="footerIcon">
+<small>URL only</small>
 
 <label>
     <input type="checkbox" id="useTimestamp">
@@ -109,6 +125,7 @@ hr {
 
 <hr>
 
+<!-- IMAGES -->
 <label>Big Image URL</label>
 <input type="url" id="bigImageUrl">
 
@@ -127,10 +144,10 @@ hr {
 </form>
 
 <script>
-function showStatus(message, type) {
+function showStatus(msg, type) {
     const box = document.getElementById("status");
     box.className = type;
-    box.textContent = message;
+    box.textContent = msg;
     box.style.display = "block";
 }
 
@@ -140,6 +157,9 @@ document.getElementById("webhookForm").addEventListener("submit", async (e) => {
 
     const webhook = document.getElementById("webhook").value.trim();
     if (!webhook) return showStatus("Webhook URL is required.", "error");
+
+    const webhookName = document.getElementById("webhookName").value.trim();
+    const webhookAvatar = document.getElementById("webhookAvatar").value.trim();
 
     const title = document.getElementById("title").value.trim();
     const description = document.getElementById("description").value.trim();
@@ -196,10 +216,15 @@ document.getElementById("webhookForm").addEventListener("submit", async (e) => {
         embed.thumbnail = { url: smallImageUrl };
     }
 
-    form.append("payload_json", JSON.stringify({
+    const payload = {
         content: " ",
         embeds: [embed]
-    }));
+    };
+
+    if (webhookName) payload.username = webhookName;
+    if (webhookAvatar) payload.avatar_url = webhookAvatar;
+
+    form.append("payload_json", JSON.stringify(payload));
 
     try {
         const res = await fetch(webhook, {
