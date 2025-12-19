@@ -132,6 +132,13 @@ small { color: #666; }
 <label>Thumbnail Image Upload</label>
 <input type="file" id="smallImageFile" accept="image/*">
 
+<hr>
+
+<!-- NEW FIELD: PLAIN MESSAGE -->
+<label>Message Content (outside embed)</label>
+<textarea id="plainMessage" rows="2" placeholder="Type your @everyone or other text here"></textarea>
+<small>Text will appear outside the embed, allows pings</small>
+
 <button type="submit">Send Webhook</button>
 
 <div id="status"></div>
@@ -161,7 +168,7 @@ document.getElementById("webhookForm").addEventListener("submit", async (e) => {
     const webhook = document.getElementById("webhook").value.trim();
     if (!webhook) return showStatus("Webhook URL is required.", "error");
 
-    /* READ (BUT DO NOT USE) STORAGE ICONS — LEARNING PURPOSE */
+    // READ (BUT DO NOT USE) STORAGE ICONS — LEARNING PURPOSE
     await readFile(document.getElementById("webhookAvatarFile").files[0]);
     await readFile(document.getElementById("authorIconFile").files[0]);
     await readFile(document.getElementById("footerIconFile").files[0]);
@@ -215,7 +222,7 @@ document.getElementById("webhookForm").addEventListener("submit", async (e) => {
     }
 
     form.append("payload_json", JSON.stringify({
-        content: " ",
+        content: document.getElementById("plainMessage").value.trim() || " ",
         embeds: [embed],
         username: document.getElementById("webhookName").value.trim() || undefined,
         avatar_url: document.getElementById("webhookAvatarUrl").value.trim() || undefined
